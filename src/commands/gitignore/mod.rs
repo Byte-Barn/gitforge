@@ -6,9 +6,9 @@ use crate::utils::remote::Fetcher;
 
 use clap::Subcommand;
 
-mod add;
-mod list;
-mod preview;
+pub mod add;
+pub mod list;
+pub mod preview;
 
 // Global constants - these can stay in the main module file
 const GITHUB_API_BASE: &str = "https://api.github.com/repos/github/gitignore";

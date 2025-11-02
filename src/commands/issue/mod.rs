@@ -2,9 +2,9 @@ use clap::Subcommand;
 
 use crate::commands::base::Runnable;
 
-mod add;
-mod list;
-mod preview;
+pub mod add;
+pub mod list;
+pub mod preview;
 
 // Global constants - these can stay in the main module file
 const GITHUB_RAW_BASE: &str =
