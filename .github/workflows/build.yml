@@ -10,6 +10,7 @@ permissions:
   contents: write
 
 jobs:
+  # --- publish-cargo job remains the same ---
   publish-cargo:
     name: Publish to Cargo
     runs-on: ubuntu-latest
@@ -24,6 +25,7 @@ jobs:
       - name: Publish to crates.io
         run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
+  # --- publish-binaries job: Refactored Python Steps ---
   publish-binaries:
     name: Publish binaries
     runs-on: ${{ matrix.build.OS }}
@@ -46,6 +48,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        # Ensure pyproject.toml and Rust Cargo.toml are present and correct
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -53,6 +56,7 @@ jobs:
           toolchain: ${{ matrix.build.TOOLCHAIN }}
           target: ${{ matrix.build.TARGET }}
 
+      # Optional: Use 'cross' for more reliable cross-compilation on Linux
       - name: Install cross
         if: runner.os == 'Linux'
         run: cargo install cross --git https://github.com/cross-rs/cross
@@ -61,89 +65,103 @@ jobs:
         shell: bash
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      - name: Build (Unix)
-        if: runner.os != 'Windows'
+      - name: Build Rust Binary
         shell: bash
         run: |
-          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-
-          # Build
+          # Build the Rust binary for the target platform using cross or cargo
           if [[ "${{ runner.os }}" == "Linux" ]]; then
+            # Use cross for Linux cross-compilation if installed
             cross build --release --target ${{ matrix.build.TARGET }}
           else
+            # Use standard cargo build for native compilation (macOS, Windows)
             cargo build --release --target ${{ matrix.build.TARGET }}
           fi
 
-          # Prepare binary with unique name
+          # Verify the binary was built
+          BINARY_PATH="target/${{ matrix.build.TARGET }}/release/gitforge" # Adjust if your binary name is different
           if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
-            BINARY="gh-templates-${{ matrix.build.NAME }}.exe"
-            cp target/${{ matrix.build.TARGET }}/release/gh-templates.exe $BINARY
-          else
-            BINARY="gh-templates-${{ matrix.build.NAME }}"
-            cp target/${{ matrix.build.TARGET }}/release/gh-templates $BINARY
-            chmod +x $BINARY
+             BINARY_PATH="${BINARY_PATH}.exe"
           fi
-          echo "BINARY=$BINARY" >> $GITHUB_ENV
+          
+          if [ ! -f "$BINARY_PATH" ]; then
+            echo "Error: Binary not found at $BINARY_PATH"
+            exit 1
+          fi
+          echo "Built binary: $BINARY_PATH"
 
-          # Prepare npm + python packages
-          mkdir -p npm/bin python/gh_templates_bin
+      # --- NEW: Python Wheel Build using Maturin ---
+      - name: Setup Python for Maturin
+        if: matrix.build.PYPI_PUBLISH == true
+        uses: actions/setup-python@v5 # Use latest setup-python action
+        with:
+          python-version: '3.11' # Use a version compatible with your minimum requirement
 
-          # For npm, copy the platform-specific binary but also create a generic named version
-          cp $BINARY npm/bin/
+      - name: Install Maturin
+        if: matrix.build.PYPI_PUBLISH == true
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin
+
+      - name: Build Python Wheel with Maturin
+        if: matrix.build.PYPI_PUBLISH == true
+        shell: bash
+        run: |
+          # Run maturin build for the current target platform
+          # It will use the pyproject.toml in the repo root
+          # Ensure your pyproject.toml has: bindings = "bin" and module-name = "gitforge" (or correct name)
+          maturin build --release --target ${{ matrix.build.TARGET }}
+          
+          # Verify the wheel was created
+          WHEEL_DIR="target/wheels"
+          if [ ! -d "$WHEEL_DIR" ] || [ -z "$(ls -A $WHEEL_DIR/*.whl 2>/dev/null)" ]; then
+             echo "Error: No wheel file found in $WHEEL_DIR"
+             ls -la $WHEEL_DIR # List directory contents for debugging
+             exit 1
+          fi
+          echo "Built wheel in $WHEEL_DIR:"
+          ls -la $WHEEL_DIR/*.whl
+
+      # --- Upload Wheels as Artifacts for later PyPI publish ---
+      - name: Upload Python Wheels as Artifacts
+        if: matrix.build.PYPI_PUBLISH == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheels-${{ matrix.build.NAME }} # Unique name per platform
+          path: target/wheels/*.whl
+          if-no-files-found: error # Fail if no wheels are found
+
+
+      # --- OLD NPM Steps (Assuming they work correctly) ---
+      # Prepare npm package structure (this part can stay if needed for npm)
+      - name: Prepare NPM Package Structure (if needed)
+        if: matrix.build.NPM_PUBLISH == true
+        shell: bash
+        run: |
+          # This step prepares files specifically for the npm package, separate from PyPI wheels
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          mkdir -p npm/bin
+
+          # Copy the built binary to npm/bin (adjust path if different)
+          BINARY_NAME="gitforge"
           if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
-            cp $BINARY npm/bin/gh-templates.exe
-          else
-            cp $BINARY npm/bin/gh-templates
+            BINARY_NAME="${BINARY_NAME}.exe"
           fi
-
-          # For python, use the generic name since the wrapper handles execution
-          if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
-            cp $BINARY python/gh_templates_bin/gh-templates.exe
-          else
-            cp $BINARY python/gh_templates_bin/gh-templates
-          fi
-
-          # npm package.json - reference generic binary name
+          cp target/${{ matrix.build.TARGET }}/release/$BINARY_NAME npm/bin/
+          
+          # Create npm package.json (adjust as needed for your npm package structure)
           cat > npm/package.json << EOF
           {
-            "name": "@rafaeljohn9/gh-templates-${{ matrix.build.NAME }}",
+            "name": "@rafaeljohn9/gitforge-${{ matrix.build.NAME }}",
             "version": "$VERSION",
             "bin": { 
-              "gh-templates": "./bin/gh-templates$([[ "${{ matrix.build.TARGET }}" == *"windows"* ]] && echo ".exe" || echo "")"
+              "gitforge": "./bin/$BINARY_NAME"
             },
             "files": ["bin/"],
             "license": "APACHE-2.0"
           }
           EOF
+          echo "Prepared NPM package structure in npm/ directory."
 
-          # Python setup.py
-          cat > python/setup.py << EOF
-          from setuptools import setup
-          setup(
-            name='gh-templates-${{ matrix.build.NAME }}',
-            version='$VERSION',
-            packages=['gh_templates_bin'],
-            package_data={'gh_templates_bin': ['*']},
-            entry_points={'console_scripts': ['gh-templates=gh_templates_bin:main']},
-            license='APACHE-2.0'
-          )
-          EOF
-          # Python __init__.py
-          cat > python/gh_templates_bin/__init__.py << 'EOF'
-          import os, sys, subprocess
-          def main():
-              binary = os.path.join(os.path.dirname(__file__), os.getenv("BINARY", "gh-templates"))
-              sys.exit(subprocess.run([binary] + sys.argv[1:]).returncode)
-          EOF
-
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ env.BINARY }}
-          overwrite: true
-          fail_on_unmatched_files: false
-
-      # (rest of your npm + PyPI steps remain unchanged below …)
       - name: Setup Node.js for NPM
         if: matrix.build.NPM_PUBLISH == true
         uses: actions/setup-node@v4
@@ -155,449 +173,56 @@ jobs:
         if: matrix.build.NPM_PUBLISH == true
         shell: bash
         run: |
-          # Create platform-specific package directory
-          BINARY="gh-templates"
-          NODE_OS=$(echo "${{ matrix.build.NAME }}" | cut -d '-' -f1)
-          NODE_ARCH=$(echo "${{ matrix.build.NAME }}" | cut -d '-' -f2)
-          
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            BINARY="${BINARY}.exe"
-            NPM_PKG="gh-templates-windows-${NODE_ARCH}"
-          else
-            NPM_PKG="gh-templates-${NODE_OS}-${NODE_ARCH}"
-          fi
-          
-          mkdir -p "${NPM_PKG}/bin"
-          cp "${BINARY}" "${NPM_PKG}/bin/"
-          cp README.md "${NPM_PKG}/" || echo "README.md not found, skipping"
-          
-          # Create package.json for platform-specific package
-          cat > "${NPM_PKG}/package.json" << EOF
-          {
-            "name": "${NPM_PKG}",
-            "version": "${{ env.RELEASE_VERSION }}",
-            "description": "GitHub Templates CLI tool - ${NODE_OS} ${NODE_ARCH}",
-            "bin": {
-              "gh-templates": "./bin/${BINARY}"
-            },
-            "files": ["bin/"],
-            "license": "Apache-2.0",
-            "repository": {
-              "type": "git",
-              "url": "git+https://github.com/${{ github.repository }}.git"
-            },
-            "os": ["${NODE_OS}"],
-            "cpu": ["${NODE_ARCH}"]
-          }
-          EOF
-          
-          cd "${NPM_PKG}"
+          cd npm # Enter the npm directory prepared earlier
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Build Python wheels (Linux)
-        if: matrix.build.PYPI_PUBLISH == true && runner.os == 'Linux'
-        run: |
-          # Create wheel directory structure
-          mkdir -p python/gh_templates_bin
-          cp gh-templates python/gh_templates_bin/
-          
-          # Create setup.py
-          cat > python/setup.py << EOF
-          from setuptools import setup, find_packages
-          import platform
-          
-          setup(
-              name='gh-templates-${{ matrix.build.NAME }}',
-              version='${{ env.RELEASE_VERSION }}',
-              description='GitHub Templates CLI tool',
-              packages=find_packages(),
-              package_data={'gh_templates_bin': ['*']},
-              entry_points={'console_scripts': ['gh-templates=gh_templates_bin:main']},
-              license='Apache-2.0',
-              classifiers=[
-                  'Development Status :: 4 - Beta',
-                  'Intended Audience :: Developers',
-                  'License :: OSI Approved :: Apache Software License',
-                  'Programming Language :: Python :: 3',
-                  'Programming Language :: Python :: 3.7',
-                  'Programming Language :: Python :: 3.8',
-                  'Programming Language :: Python :: 3.9',
-                  'Programming Language :: Python :: 3.10',
-                  'Programming Language :: Python :: 3.11',
-                  'Programming Language :: Python :: 3.12',
-              ],
-              python_requires='>=3.7',
-          )
-          EOF
-          
-          # Create __init__.py
-          cat > python/gh_templates_bin/__init__.py << 'EOF'
-          import os, sys, subprocess, stat
-          def main():
-              binary = os.path.join(os.path.dirname(__file__), 'gh-templates')
-              if not os.path.exists(binary):
-                  print(f"Error: Binary not found at {binary}")
-                  sys.exit(1)
-              # Ensure binary is executable
-              os.chmod(binary, os.stat(binary).st_mode | stat.S_IEXEC)
-              sys.exit(subprocess.run([binary] + sys.argv[1:]).returncode)
-          EOF
-
-      - name: Build Python wheels (macOS)
-        if: matrix.build.PYPI_PUBLISH == true && runner.os == 'macOS'
-        run: |
-          # Create wheel directory structure
-          mkdir -p python/gh_templates_bin
-          cp gh-templates python/gh_templates_bin/
-          
-          # Create setup.py
-          cat > python/setup.py << EOF
-          from setuptools import setup, find_packages
-          
-          setup(
-              name='gh-templates-${{ matrix.build.NAME }}',
-              version='${{ env.RELEASE_VERSION }}',
-              description='GitHub Templates CLI tool',
-              packages=find_packages(),
-              package_data={'gh_templates_bin': ['*']},
-              entry_points={'console_scripts': ['gh-templates=gh_templates_bin:main']},
-              license='Apache-2.0',
-              classifiers=[
-                  'Development Status :: 4 - Beta',
-                  'Intended Audience :: Developers',
-                  'License :: OSI Approved :: Apache Software License',
-                  'Programming Language :: Python :: 3',
-                  'Programming Language :: Python :: 3.7',
-                  'Programming Language :: Python :: 3.8',
-                  'Programming Language :: Python :: 3.9',
-                  'Programming Language :: Python :: 3.10',
-                  'Programming Language :: Python :: 3.11',
-                  'Programming Language :: Python :: 3.12',
-              ],
-              python_requires='>=3.7',
-          )
-          EOF
-          
-          # Create __init__.py
-          cat > python/gh_templates_bin/__init__.py << 'EOF'
-          import os, sys, subprocess, stat
-          def main():
-              binary = os.path.join(os.path.dirname(__file__), 'gh-templates')
-              if not os.path.exists(binary):
-                  print(f"Error: Binary not found at {binary}")
-                  sys.exit(1)
-              # Ensure binary is executable
-              os.chmod(binary, os.stat(binary).st_mode | stat.S_IEXEC)
-              sys.exit(subprocess.run([binary] + sys.argv[1:]).returncode)
-          EOF
-
-      - name: Build Python wheels (Windows)
-        if: matrix.build.PYPI_PUBLISH == true && runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          # Create wheel directory structure
-          New-Item -ItemType Directory -Force -Path python/gh_templates_bin
-          Copy-Item gh-templates.exe python/gh_templates_bin/
-          
-          # Create setup.py
-          @"
-          from setuptools import setup, find_packages
-          
-          setup(
-              name='gh-templates-${{ matrix.build.NAME }}',
-              version='${{ env.RELEASE_VERSION }}',
-              description='GitHub Templates CLI tool',
-              packages=find_packages(),
-              package_data={'gh_templates_bin': ['*']},
-              entry_points={'console_scripts': ['gh-templates=gh_templates_bin:main']},
-              license='Apache-2.0',
-              classifiers=[
-                  'Development Status :: 4 - Beta',
-                  'Intended Audience :: Developers',
-                  'License :: OSI Approved :: Apache Software License',
-                  'Programming Language :: Python :: 3',
-                  'Programming Language :: Python :: 3.7',
-                  'Programming Language :: Python :: 3.8',
-                  'Programming Language :: Python :: 3.9',
-                  'Programming Language :: Python :: 3.10',
-                  'Programming Language :: Python :: 3.11',
-                  'Programming Language :: Python :: 3.12',
-              ],
-              python_requires='>=3.7',
-          )
-          "@ | Out-File -FilePath python/setup.py -Encoding UTF8
-          
-          # Create __init__.py
-          @'
-          import os, sys, subprocess
-          def main():
-              binary = os.path.join(os.path.dirname(__file__), 'gh-templates.exe')
-              if not os.path.exists(binary):
-                  print(f"Error: Binary not found at {binary}")
-                  sys.exit(1)
-              sys.exit(subprocess.run([binary] + sys.argv[1:]).returncode)
-          '@ | Out-File -FilePath python/gh_templates_bin/__init__.py -Encoding UTF8
-
-      - name: Setup Python for PyPI
-        if: matrix.build.PYPI_PUBLISH == true
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: Publish to PyPI
-        if: matrix.build.PYPI_PUBLISH == true
+      # --- OLD GitHub Release Upload (for raw binaries) ---
+      - name: Prepare Binary for GitHub Release
         shell: bash
         run: |
-          cd python
-          # Install required dependencies
-          python -m pip install --upgrade pip setuptools wheel twine
-          
-          # Build the package
-          python setup.py sdist bdist_wheel
-          
-          # Upload to PyPI
-          python -m twine upload dist/* --skip-existing -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
+          # Copy the built binary with a platform-specific name for GitHub Release
+          BINARY_NAME="gitforge-${{ matrix.build.NAME }}"
+          if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
+            BINARY_NAME="${BINARY_NAME}.exe"
+            cp target/${{ matrix.build.TARGET }}/release/gitforge.exe $BINARY_NAME
+          else
+            cp target/${{ matrix.build.TARGET }}/release/gitforge $BINARY_NAME
+            chmod +x $BINARY_NAME
+          fi
+          echo "BINARY=$BINARY_NAME" >> $GITHUB_ENV
 
-  publish-python-unified:
-    name: Publish unified Python package
-    runs-on: ubuntu-latest
-    needs: publish-binaries
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          python-version: '3.9'
+          files: ${{ env.BINARY }}
+          overwrite: true
+          fail_on_unmatched_files: false
 
-      - name: Set release version
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+  # --- NEW: Single Job to Publish ALL Wheels to PyPI ---
+  publish-python-wheels-to-pypi:
+    name: Publish Python Wheels to PyPI
+    needs: publish-binaries # Wait for all publish-binaries jobs to finish and upload artifacts
+    runs-on: ubuntu-latest
+    environment: pypi # Use a GitHub environment for PyPI secrets
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download all Python wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: python-wheels-* # Download all artifacts matching the pattern
+          path: dist # Download to a 'dist' directory
+          merge-multiple: true # Combine artifacts from different matrix runs into one 'dist' folder
 
-      - name: Create unified Python package
-        run: |
-          mkdir -p python-unified/gh_templates
-          
-          # Create setup.py for unified package
-          cat > python-unified/setup.py << 'EOF'
-          import platform
-          from setuptools import setup, find_packages
-          import os
-          
-          # Get version from environment
-          version = os.environ.get('RELEASE_VERSION', '0.0.0')
-          
-          # Determine the correct platform-specific package
-          def get_platform_package():
-              system = platform.system().lower()
-              machine = platform.machine().lower()
-              
-              # Normalize architecture names
-              if machine in ['x86_64', 'amd64']:
-                  arch = 'x64'
-              elif machine in ['aarch64', 'arm64']:
-                  arch = 'arm64'
-              elif machine in ['i386', 'i686']:
-                  arch = 'x86'
-              else:
-                  arch = machine
-              
-              # Map to our package names
-              if system == 'linux':
-                  if arch == 'x64':
-                      return 'gh-templates-linux-x64-glibc'
-                  elif arch == 'arm64':
-                      return 'gh-templates-linux-arm64-glibc'
-                  elif arch == 'x86':
-                      return 'gh-templates-linux-x86-musl'
-                  else:
-                      return f'gh-templates-linux-{arch}-glibc'
-              elif system == 'darwin':
-                  return f'gh-templates-darwin-{arch}'
-              elif system == 'windows':
-                  if arch == 'x64':
-                      return 'gh-templates-win32-x64-msvc'
-                  elif arch == 'x86':
-                      return 'gh-templates-win32-x86-msvc'
-                  else:
-                      return f'gh-templates-win32-{arch}-msvc'
-              else:
-                  # Fallback to linux x64
-                  return 'gh-templates-linux-x64-glibc'
-          
-          platform_package = get_platform_package()
-          
-          setup(
-              name='gh-templates',
-              version=version,
-              description='GitHub Templates CLI tool - unified installer',
-              long_description='''
-          # gh-templates
-          
-          GitHub Templates CLI tool for managing and using GitHub repository templates.
-          This package automatically installs the correct binary for your platform.
-          
-          ## Usage
-          
-          ```bash
-          pip install gh-templates
-          gh-templates --help
-          ```
-          
-          ## Supported Platforms
-          
-          - Linux (x64, x86, ARM64) - glibc and musl variants
-          - macOS (x64, ARM64)  
-          - Windows (x64, x86, ARM64)
-              ''',
-              long_description_content_type='text/markdown',
-              packages=find_packages(),
-              entry_points={
-                  'console_scripts': ['gh-templates=gh_templates:main']
-              },
-              install_requires=[
-                  f'{platform_package}=={version}'
-              ],
-              license='Apache-2.0',
-              author='Rafael John',
-              url='https://github.com/RafaelJohn9/gh-templates',
-              classifiers=[
-                  'Development Status :: 4 - Beta',
-                  'Intended Audience :: Developers',
-                  'License :: OSI Approved :: Apache Software License',
-                  'Programming Language :: Python :: 3',
-                  'Programming Language :: Python :: 3.7',
-                  'Programming Language :: Python :: 3.8',
-                  'Programming Language :: Python :: 3.9',
-                  'Programming Language :: Python :: 3.10',
-                  'Programming Language :: Python :: 3.11',
-                  'Programming Language :: Python :: 3.12',
-                  'Operating System :: OS Independent',
-                  'Topic :: Utilities',
-              ],
-              python_requires='>=3.7',
-          )
-          EOF
-          
-          # Create main module that delegates to platform-specific package
-          cat > python-unified/gh_templates/__init__.py << 'EOF'
-          """
-          GitHub Templates CLI tool - unified installer
-          This package automatically delegates to the appropriate platform-specific binary.
-          """
-          import sys
-          import platform
-          import importlib
-          import subprocess
-          import os
-          
-          def get_platform_package_name():
-              """Determine the platform-specific package name."""
-              system = platform.system().lower()
-              machine = platform.machine().lower()
-              
-              # Normalize architecture names
-              if machine in ['x86_64', 'amd64']:
-                  arch = 'x64'
-              elif machine in ['aarch64', 'arm64']:
-                  arch = 'arm64'
-              elif machine in ['i386', 'i686']:
-                  arch = 'x86'
-              else:
-                  arch = machine
-              
-              # All platform-specific packages use the same module name
-              return 'gh_templates_bin'
-          
-          def main():
-              """Main entry point that delegates to the platform-specific binary."""
-              try:
-                  # Import the platform-specific package
-                  package_name = get_platform_package_name()
-                  platform_module = importlib.import_module(package_name)
-                  
-                  # Call the main function from the platform-specific package
-                  if hasattr(platform_module, 'main'):
-                      platform_module.main()
-                  else:
-                      print(f"Error: No main function found in {package_name}")
-                      sys.exit(1)
-                      
-              except ImportError as e:
-                  system = platform.system()
-                  machine = platform.machine()
-                  print(f"Error: Platform-specific package not found for {system}-{machine}")
-                  print(f"Import error: {e}")
-                  print()
-                  print("This usually means:")
-                  print("1. Your platform is not supported")
-                  print("2. The platform-specific package failed to install")
-                  print()
-                  print("Supported platforms:")
-                  print("- Linux x64/x86/ARM64 (glibc/musl)")
-                  print("- macOS x64/ARM64")
-                  print("- Windows x64/x86/ARM64")
-                  print()
-                  print("Please report this issue at:")
-                  print("https://github.com/RafaelJohn9/gh-templates/issues")
-                  sys.exit(1)
-                  
-              except Exception as e:
-                  print(f"Error running gh-templates: {e}")
-                  sys.exit(1)
-          
-          # Allow direct module execution
-          if __name__ == '__main__':
-              main()
-          EOF
-          
-          # Create README for PyPI
-          cat > python-unified/README.md << 'EOF'
-          # gh-templates
-          
-          GitHub Templates CLI tool for managing and using GitHub repository templates.
-          
-          ## Installation
-          
-          ```bash
-          pip install gh-templates
-          ```
-          
-          ## Usage
-          
-          ```bash
-          gh-templates --help
-          gh-templates --version
-          ```
-          
-          ## Platform Support
-          
-          This package automatically installs the correct binary for your platform:
-          
-          - **Linux**: x64, x86, ARM64 (glibc and musl variants)
-          - **macOS**: x64 (Intel), ARM64 (Apple Silicon)
-          - **Windows**: x64, x86, ARM64
-          
-          ## How it Works
-          
-          This is a unified installer package that:
-          
-          1. Detects your platform during installation
-          2. Installs the appropriate platform-specific package as a dependency
-          3. Provides a unified `gh-templates` command that delegates to the platform binary
-          
-          ## License
-          
-          Apache-2.0
-          EOF
-          
-          # Install dependencies and publish
-          cd python-unified
-          python -m pip install --upgrade pip setuptools wheel twine
-          python setup.py sdist bdist_wheel
-          python -m twine upload dist/* --skip-existing -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
+      - name: Publish all wheels to PyPI
+        # Uses the PYPI_API_TOKEN secret configured in the GitHub environment
+        # Recommended: Use trusted publishing (OIDC) for security
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Ensure you have configured trusted publishing on PyPI for your project
 
+  # --- publish-npm-unified job remains the same ---
   publish-npm-unified:
     name: Publish unified NPM package
     runs-on: ubuntu-latest
@@ -616,16 +241,16 @@ jobs:
 
       - name: Create unified package
         run: |
-          mkdir -p gh-templates-unified/bin
+          mkdir -p gitforge-unified/bin
           
           # Create package.json
-          cat > gh-templates-unified/package.json << EOF
+          cat > gitforge-unified/package.json << EOF
           {
-            "name": "gh-templates",
+            "name": "gitforge",
             "version": "${{ env.RELEASE_VERSION }}",
             "description": "GitHub Templates CLI tool (platform-aware wrapper)",
             "bin": {
-              "gh-templates": "./bin/gh-templates"
+              "gitforge": "./bin/gitforge"
             },
             "license": "Apache-2.0",
             "repository": {
@@ -633,12 +258,12 @@ jobs:
               "url": "git+https://github.com/${{ github.repository }}.git"
             },
             "optionalDependencies": {
-              "gh-templates-linux-x64": "${{ env.RELEASE_VERSION }}",
-              "gh-templates-linux-arm64": "${{ env.RELEASE_VERSION }}",
-              "gh-templates-darwin-x64": "${{ env.RELEASE_VERSION }}",
-              "gh-templates-darwin-arm64": "${{ env.RELEASE_VERSION }}",
-              "gh-templates-windows-x64": "${{ env.RELEASE_VERSION }}",
-              "gh-templates-windows-arm64": "${{ env.RELEASE_VERSION }}"
+              "gitforge-linux-x64": "${{ env.RELEASE_VERSION }}",
+              "gitforge-linux-arm64": "${{ env.RELEASE_VERSION }}",
+              "gitforge-darwin-x64": "${{ env.RELEASE_VERSION }}",
+              "gitforge-darwin-arm64": "${{ env.RELEASE_VERSION }}",
+              "gitforge-windows-x64": "${{ env.RELEASE_VERSION }}",
+              "gitforge-windows-arm64": "${{ env.RELEASE_VERSION }}"
             },
             "files": ["bin/"],
             "engines": {
@@ -648,7 +273,7 @@ jobs:
           EOF
           
           # Create the smart wrapper
-          cat > gh-templates-unified/bin/gh-templates << 'EOF'
+          cat > gitforge-unified/bin/gitforge << 'EOF'
           #!/usr/bin/env node
           
           const { execFileSync } = require('child_process');
@@ -661,14 +286,14 @@ jobs:
           let packageName;
           if (platform === 'win32') {
             if (arch === 'arm64') {
-              packageName = 'gh-templates-windows-arm64';
+              packageName = 'gitforge-windows-arm64';
             } else {
-              packageName = 'gh-templates-windows-x64';
+              packageName = 'gitforge-windows-x64';
             }
           } else if (platform === 'darwin') {
-            packageName = arch === 'arm64' ? 'gh-templates-darwin-arm64' : 'gh-templates-darwin-x64';
+            packageName = arch === 'arm64' ? 'gitforge-darwin-arm64' : 'gitforge-darwin-x64';
           } else if (platform === 'linux') {
-            packageName = arch === 'arm64' ? 'gh-templates-linux-arm64' : 'gh-templates-linux-x64';
+            packageName = arch === 'arm64' ? 'gitforge-linux-arm64' : 'gitforge-linux-x64';
           } else {
             console.error(`Unsupported platform: ${platform}-${arch}`);
             process.exit(1);
@@ -676,24 +301,25 @@ jobs:
           
           try {
             const pkgPath = require.resolve(`${packageName}/package.json`);
-            const binPath = path.join(path.dirname(pkgPath), 'bin', platform === 'win32' ? 'gh-templates.exe' : 'gh-templates');
+            const binPath = path.join(path.dirname(pkgPath), 'bin', platform === 'win32' ? 'gitforge.exe' : 'gitforge');
             execFileSync(binPath, process.argv.slice(2), { stdio: 'inherit' });
           } catch (err) {
             console.error(`Platform-specific package not found: ${packageName}`);
             console.error(`Install it directly:`);
             console.error(`   npm install -g ${packageName}`);
             console.error(`   OR`);
-            console.error(`   npm install -g gh-templates-${platform}-${arch}`);
+            console.error(`   npm install -g gitforge-${platform}-${arch}`);
             process.exit(1);
           }
           EOF
           
-          chmod +x gh-templates-unified/bin/gh-templates
-          cd gh-templates-unified
+          chmod +x gitforge-unified/bin/gitforge
+          cd gitforge-unified
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          
+
+  # --- publish-homebrew job remains the same ---
   publish-homebrew:
     name: Update Homebrew formula
     runs-on: macos-latest
@@ -707,9 +333,9 @@ jobs:
           VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
 
           # Get release assets
-          LINUX_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gh-templates-linux-x64-glibc"
-          DARWIN_ARM_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gh-templates-darwin-arm64"
-          DARWIN_X64_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gh-templates-darwin-x64"
+          LINUX_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitforge-linux-x64-glibc"
+          DARWIN_ARM_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitforge-darwin-arm64"
+          DARWIN_X64_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitforge-darwin-x64"
 
           # Calculate checksums
           wget -q $LINUX_URL -O linux-binary
@@ -720,11 +346,11 @@ jobs:
           DARWIN_X64_SHA=$(shasum -a 256 darwin-x64-binary | cut -d' ' -f1)
 
           # Clone homebrew tap
-          git clone https://github.com/rafaeljohn9/homebrew-tap.git
+          git clone https://github.com/rafaeljohn9/homebrew-tap.git  
           cd homebrew-tap
 
           # Create/update formula
-          cat > Formula/gh-templates.rb << EOF
+          cat > Formula/gitforge.rb << EOF
           class GhTemplates < Formula
             desc "GitHub Templates CLI tool"
             homepage "https://github.com/${{ github.repository }}"
@@ -743,11 +369,11 @@ jobs:
               sha256 "$LINUX_SHA"
             end
             def install
-              bin.install "gh-templates"
+              bin.install "gitforge"
             end
 
             test do
-              system "#{bin}/gh-templates", "--version"
+              system "#{bin}/gitforge", "--version"
             end
           end
           EOF
@@ -755,6 +381,6 @@ jobs:
           # Commit and push
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/gh-templates.rb
-          git commit -m "Update gh-templates to $VERSION"
+          git add Formula/gitforge.rb
+          git commit -m "Update gitforge to $VERSION"
           git push https://x-access-token:${{ secrets.HOMEBREW_GITHUB_TOKEN }}@github.com/rafaeljohn9/homebrew-tap.git
