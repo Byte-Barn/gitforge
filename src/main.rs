@@ -6,7 +6,7 @@ mod utils;
 const BUILD_RS_CHECKSUM: &str = env!("BUILD_RS_CHECKSUM");
 
 #[derive(Parser)]
-#[command(name = "gitforge")]
+#[command(name = "gitcraft")]
 #[command(about = "📦 Scaffold GitHub templates easily", long_about = None)]
 #[command(version = option_env!("APP_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")))]
 struct Cli {

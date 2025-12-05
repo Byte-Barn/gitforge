@@ -3,7 +3,7 @@ use predicates::prelude::*;
 use std::fs;
 
 /**
- Integration tests for the `gitforge` issue subcommand.
+ Integration tests for the `gitcraft` issue subcommand.
 
 This test suite covers the following scenarios:
 
@@ -40,7 +40,7 @@ fn test_issue_add_bug() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "bug"])
         .assert()
@@ -61,7 +61,7 @@ fn test_issue_add_multiple() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "bug", "feature"])
         .assert()
@@ -79,7 +79,7 @@ fn test_issue_add_with_dir() {
     let target_dir = temp_path.join("custom_dir");
     fs::create_dir_all(&target_dir).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["add", "issue", "bug", "--dir", target_dir.to_str().unwrap()])
         .assert()
         .success()
@@ -101,7 +101,7 @@ fn test_issue_add_force_overwrite() {
     fs::write(&issue_path, "existing content").unwrap();
 
     // Try to add without force (should fail)
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "bug"])
         .assert()
@@ -109,7 +109,7 @@ fn test_issue_add_force_overwrite() {
         .stderr(predicate::str::contains("already exists"));
 
     // Try with force flag (should succeed)
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "bug", "--force"])
         .assert()
@@ -125,7 +125,7 @@ fn test_issue_add_invalid_type() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "invalid-template"])
         .assert()
@@ -142,7 +142,7 @@ fn test_issue_add_no_template() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue"])
         .assert()
@@ -157,7 +157,7 @@ fn test_issue_add_unknown_argument() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "--unknown"])
         .assert()
@@ -175,7 +175,7 @@ fn test_issue_add_valid_and_invalid_templates() {
     create_git_repo(&temp_path);
 
     // Attempt to add both a valid ("bug") and invalid ("not-a-template") template in one command
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "bug", "not-a-template"])
         .assert()
@@ -202,7 +202,7 @@ fn test_issue_add_default_with_output_without_ext() {
     create_git_repo(&temp_path);
 
     // Add "feature" template and specify output file without extension
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "feature", "-o", "feat"])
         .assert()
@@ -225,7 +225,7 @@ fn test_issue_add_default_with_output_with_ext() {
     create_git_repo(&temp_path);
 
     // Add "feature" template and specify output file with extension
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "feature", "-o", "feat.yml"])
         .assert()
@@ -248,7 +248,7 @@ fn test_issue_add_uneven_templates_and_outputs() {
     create_git_repo(&temp_path);
 
     // Pass two templates but only one output file
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "issue", "feature", "bug", "-o", "feat"])
         .assert()
@@ -263,7 +263,7 @@ fn test_issue_add_uneven_templates_and_outputs() {
 #[test]
 fn test_issue_list() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "issues"])
         .assert()
         .success()
@@ -276,7 +276,7 @@ fn test_issue_list() {
 #[test]
 fn test_issue_preview_bug() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["preview", "issue", "bug"])
         .assert()
         .success()
@@ -286,7 +286,7 @@ fn test_issue_preview_bug() {
 #[test]
 fn test_issue_preview_multiple() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["preview", "issue", "bug", "feature"])
         .assert()
         .success()
@@ -297,7 +297,7 @@ fn test_issue_preview_multiple() {
 #[test]
 fn test_issue_preview_invalid_id() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["preview", "issue", "not-a-template"])
         .assert()
         .failure()
@@ -313,29 +313,29 @@ fn test_issue_help_command() {
     let _temp_dir = setup_test_env();
 
     // add issue help
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["add", "issue", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Add an issue template"))
-        .stdout(predicate::str::contains("Usage: gitforge add issue-template"))
+        .stdout(predicate::str::contains("Usage: gitcraft add issue-template"))
         .stdout(predicate::str::contains("--dir"))
         .stdout(predicate::str::contains("--force"))
         .stdout(predicate::str::contains("-o, --output"));
 
     // list issue help
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "issue", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("List available issue templates"))
-        .stdout(predicate::str::contains("Usage: gitforge list issue"));
+        .stdout(predicate::str::contains("Usage: gitcraft list issue"));
 
     // preview issue help
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["preview", "issue", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Preview an issue template"))
-        .stdout(predicate::str::contains("Usage: gitforge preview issue"));
+        .stdout(predicate::str::contains("Usage: gitcraft preview issue"));
 }

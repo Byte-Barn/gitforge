@@ -6,7 +6,7 @@ use std::fs;
 use crate::common::test_utils::{assert_file_exists, create_git_repo, setup_test_env};
 
 /**
-Integration tests for the `gitforge` license subcommand.
+Integration tests for the `gitcraft` license subcommand.
 
 This test suite covers the following scenarios:
 
@@ -40,7 +40,7 @@ fn test_license_add_with_params() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&[
         "add",
@@ -68,7 +68,7 @@ fn test_license_add_with_unused_param_warning() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "license", "mit", "--param", "unusedparam=foobar"])
         .assert()
@@ -90,7 +90,7 @@ fn test_license_add_interactive_mode() {
     create_git_repo(&temp_path);
 
     // Simulate interactive input by piping values (requires assert_cmd::Command::write_stdin)
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "license", "mit", "--interactive"])
         .write_stdin("2025\nJohn Doe\n")
@@ -112,7 +112,7 @@ fn test_license_add_update_cache_flag() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "license", "mit", "--update-cache"])
         .assert()
@@ -132,7 +132,7 @@ fn test_license_add_multiple_licenses_with_output_files() {
     let mit_path = temp_path.join("LICENSE-MIT");
     let apache_path = temp_path.join("LICENSE-APACHE2-0");
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&[
         "add",
@@ -167,7 +167,7 @@ fn test_license_add_multiple_licenses_with_output_files_mismatched_count() {
     create_git_repo(&temp_path);
 
     // Only one output file for two licenses
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "license", "mit", "apache-2.0", "-o", "LICENSE-MIT"])
         .assert()
@@ -187,7 +187,7 @@ fn test_license_add_multiple_licenses_with_params_and_output_files() {
     let mit_path = temp_path.join("LICENSE-MIT");
     let apache_path = temp_path.join("LICENSE-APACHE2-0");
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&[
         "add",
@@ -224,7 +224,7 @@ fn test_license_add_multiple_licenses_with_params_and_output_files() {
 #[test]
 fn test_license_list_popular() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "licenses", "--popular"])
         .assert()
         .success()
@@ -235,7 +235,7 @@ fn test_license_list_popular() {
 #[test]
 fn test_license_list_non_software() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "licenses", "--non-software"])
         .assert()
         .success()
@@ -248,7 +248,7 @@ fn test_license_list_non_software() {
 #[test]
 fn test_license_list_search_wildcard() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "licenses", "--search", "mit"])
         .assert()
         .success()
@@ -259,7 +259,7 @@ fn test_license_list_search_wildcard() {
 #[test]
 fn test_license_list_osi_approved() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "licenses", "--osi-approved"])
         .assert()
         .success()
@@ -270,7 +270,7 @@ fn test_license_list_osi_approved() {
 #[test]
 fn test_license_list_fsf_libre() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "licenses", "--fsf-libre"])
         .assert()
         .success()
@@ -280,7 +280,7 @@ fn test_license_list_fsf_libre() {
 #[test]
 fn test_license_list_include_deprecated() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "licenses", "--include-deprecated"])
         .assert()
         .success()
@@ -290,7 +290,7 @@ fn test_license_list_include_deprecated() {
 #[test]
 fn test_license_list_unknown_argument() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["list", "licenses", "--unknown"])
         .assert()
         .failure()
@@ -302,7 +302,7 @@ fn test_license_list_unknown_argument() {
 #[test]
 fn test_license_preview_with_update_cache() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["preview", "license", "mit", "--update-cache"])
         .assert()
         .success()
@@ -313,7 +313,7 @@ fn test_license_preview_with_update_cache() {
 #[test]
 fn test_license_preview_with_all_flags() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&[
         "preview",
         "license",
@@ -336,7 +336,7 @@ fn test_license_preview_with_all_flags() {
 #[test]
 fn test_license_preview_nonexistent_license() {
     let _temp_dir = setup_test_env();
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&["preview", "license", "not-a-license"])
         .assert()
         .success()
@@ -351,13 +351,13 @@ fn test_license_help_command() {
     let _temp_dir = setup_test_env();
 
     // preview help
-    let mut cmd_preview = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd_preview = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd_preview
         .args(&["preview", "license", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Preview a license"))
-        .stdout(predicate::str::contains("Usage: gitforge preview license"))
+        .stdout(predicate::str::contains("Usage: gitcraft preview license"))
         .stdout(predicate::str::contains("-d, --description"))
         .stdout(predicate::str::contains("-p, --permissions"))
         .stdout(predicate::str::contains("-l, --limitations"))
@@ -367,13 +367,13 @@ fn test_license_help_command() {
         .stdout(predicate::str::contains("-h, --help"));
 
     // add help
-    let mut cmd_add = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd_add = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd_add
         .args(&["add", "license", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Add a license"))
-        .stdout(predicate::str::contains("Usage: gitforge add license"))
+        .stdout(predicate::str::contains("Usage: gitcraft add license"))
         .stdout(predicate::str::contains("--dir"))
         .stdout(predicate::str::contains("--force"))
         .stdout(predicate::str::contains("--all"))
@@ -384,13 +384,13 @@ fn test_license_help_command() {
         .stdout(predicate::str::contains("-h, --help"));
 
     // list help
-    let mut cmd_list = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd_list = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd_list
         .args(&["list", "license", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("List available licenses"))
-        .stdout(predicate::str::contains("Usage: gitforge list license"))
+        .stdout(predicate::str::contains("Usage: gitcraft list license"))
         .stdout(predicate::str::contains("-p, --popular"))
         .stdout(predicate::str::contains("-n, --non-software"))
         .stdout(predicate::str::contains("-s, --search"))

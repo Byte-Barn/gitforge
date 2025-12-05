@@ -3,13 +3,13 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "gitforge"
+name = "gitcraft"
 version = "0.0.1" # This version should ideally match the Rust crate's version in Cargo.toml
 description = "Scaffold new repositories quickly using templates hosted on GitHub. A Rust-powered CLI."
 authors = [{ name = "ByteBarn", email = "john@kagunda.dev" }]
 requires-python = ">=3.8"
 keywords = [
-  "gitforge", "scaffold", "template", "github", "repository", "cli", "developer", "productivity"
+  "gitcraft", "scaffold", "template", "github", "repository", "cli", "developer", "productivity"
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -33,11 +33,11 @@ classifiers = [
 readme = "README.md"
 
 [project.urls]
-Repository = "https://github.com/Byte-Barn/gitforge"
+Repository = "https://github.com/Byte-Barn/gitcraft"
 Homepage = "https://gh-templates.dev/"
 Documentation = "https://gh-templates.dev/"
-Changelog = "https://github.com/Byte-Barn/gitforge/blob/main/CHANGELOG.md"
-Releases = "https://github.com/Byte-Barn/gitforge/releases"
+Changelog = "https://github.com/Byte-Barn/gitcraft/blob/main/CHANGELOG.md"
+Releases = "https://github.com/Byte-Barn/gitcraft/releases"
 
 
 # --- Maturin Configuration ---
@@ -50,7 +50,7 @@ bindings = "bin"
 manifest-path = "Cargo.toml"
 # The name of the Rust binary target as defined in Cargo.toml's [[bin]] section.
 # This is usually the same as the crate name if not explicitly set differently.
-module-name = "gitforge"
+module-name = "gitcraft"
 # Set to true to strip debug symbols from the final binary, reducing size.
 strip = true
 
@@ -93,8 +93,8 @@ ignore_missing_imports = true
 files = [
   # Adjust paths if your Python files are in a different location relative to pyproject.toml
   # This section might be less relevant if there's minimal Python code.
-  # "python/gitforge/*.py",
+  # "python/gitcraft/*.py",
 ]
 
-[tool.gitforge]
+[tool.gitcraft]
 managed = false

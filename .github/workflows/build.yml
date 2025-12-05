@@ -78,7 +78,7 @@ jobs:
           fi
 
           # Verify the binary was built
-          BINARY_PATH="target/${{ matrix.build.TARGET }}/release/gitforge" # Adjust if your binary name is different
+          BINARY_PATH="target/${{ matrix.build.TARGET }}/release/gitcraft" # Adjust if your binary name is different
           if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
              BINARY_PATH="${BINARY_PATH}.exe"
           fi
@@ -108,7 +108,7 @@ jobs:
         run: |
           # Run maturin build for the current target platform
           # It will use the pyproject.toml in the repo root
-          # Ensure your pyproject.toml has: bindings = "bin" and module-name = "gitforge" (or correct name)
+          # Ensure your pyproject.toml has: bindings = "bin" and module-name = "gitcraft" (or correct name)
           maturin build --release --target ${{ matrix.build.TARGET }}
           
           # Verify the wheel was created
@@ -142,7 +142,7 @@ jobs:
           mkdir -p npm/bin
 
           # Copy the built binary to npm/bin (adjust path if different)
-          BINARY_NAME="gitforge"
+          BINARY_NAME="gitcraft"
           if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
             BINARY_NAME="${BINARY_NAME}.exe"
           fi
@@ -151,10 +151,10 @@ jobs:
           # Create npm package.json (adjust as needed for your npm package structure)
           cat > npm/package.json << EOF
           {
-            "name": "@rafaeljohn9/gitforge-${{ matrix.build.NAME }}",
+            "name": "@rafaeljohn9/gitcraft-${{ matrix.build.NAME }}",
             "version": "$VERSION",
             "bin": { 
-              "gitforge": "./bin/$BINARY_NAME"
+              "gitcraft": "./bin/$BINARY_NAME"
             },
             "files": ["bin/"],
             "license": "APACHE-2.0"
@@ -183,12 +183,12 @@ jobs:
         shell: bash
         run: |
           # Copy the built binary with a platform-specific name for GitHub Release
-          BINARY_NAME="gitforge-${{ matrix.build.NAME }}"
+          BINARY_NAME="gitcraft-${{ matrix.build.NAME }}"
           if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
             BINARY_NAME="${BINARY_NAME}.exe"
-            cp target/${{ matrix.build.TARGET }}/release/gitforge.exe $BINARY_NAME
+            cp target/${{ matrix.build.TARGET }}/release/gitcraft.exe $BINARY_NAME
           else
-            cp target/${{ matrix.build.TARGET }}/release/gitforge $BINARY_NAME
+            cp target/${{ matrix.build.TARGET }}/release/gitcraft $BINARY_NAME
             chmod +x $BINARY_NAME
           fi
           echo "BINARY=$BINARY_NAME" >> $GITHUB_ENV
@@ -241,16 +241,16 @@ jobs:
 
       - name: Create unified package
         run: |
-          mkdir -p gitforge-unified/bin
+          mkdir -p gitcraft-unified/bin
           
           # Create package.json
-          cat > gitforge-unified/package.json << EOF
+          cat > gitcraft-unified/package.json << EOF
           {
-            "name": "gitforge",
+            "name": "gitcraft",
             "version": "${{ env.RELEASE_VERSION }}",
             "description": "GitHub Templates CLI tool (platform-aware wrapper)",
             "bin": {
-              "gitforge": "./bin/gitforge"
+              "gitcraft": "./bin/gitcraft"
             },
             "license": "Apache-2.0",
             "repository": {
@@ -258,12 +258,12 @@ jobs:
               "url": "git+https://github.com/${{ github.repository }}.git"
             },
             "optionalDependencies": {
-              "gitforge-linux-x64": "${{ env.RELEASE_VERSION }}",
-              "gitforge-linux-arm64": "${{ env.RELEASE_VERSION }}",
-              "gitforge-darwin-x64": "${{ env.RELEASE_VERSION }}",
-              "gitforge-darwin-arm64": "${{ env.RELEASE_VERSION }}",
-              "gitforge-windows-x64": "${{ env.RELEASE_VERSION }}",
-              "gitforge-windows-arm64": "${{ env.RELEASE_VERSION }}"
+              "gitcraft-linux-x64": "${{ env.RELEASE_VERSION }}",
+              "gitcraft-linux-arm64": "${{ env.RELEASE_VERSION }}",
+              "gitcraft-darwin-x64": "${{ env.RELEASE_VERSION }}",
+              "gitcraft-darwin-arm64": "${{ env.RELEASE_VERSION }}",
+              "gitcraft-windows-x64": "${{ env.RELEASE_VERSION }}",
+              "gitcraft-windows-arm64": "${{ env.RELEASE_VERSION }}"
             },
             "files": ["bin/"],
             "engines": {
@@ -273,7 +273,7 @@ jobs:
           EOF
           
           # Create the smart wrapper
-          cat > gitforge-unified/bin/gitforge << 'EOF'
+          cat > gitcraft-unified/bin/gitcraft << 'EOF'
           #!/usr/bin/env node
           
           const { execFileSync } = require('child_process');
@@ -286,14 +286,14 @@ jobs:
           let packageName;
           if (platform === 'win32') {
             if (arch === 'arm64') {
-              packageName = 'gitforge-windows-arm64';
+              packageName = 'gitcraft-windows-arm64';
             } else {
-              packageName = 'gitforge-windows-x64';
+              packageName = 'gitcraft-windows-x64';
             }
           } else if (platform === 'darwin') {
-            packageName = arch === 'arm64' ? 'gitforge-darwin-arm64' : 'gitforge-darwin-x64';
+            packageName = arch === 'arm64' ? 'gitcraft-darwin-arm64' : 'gitcraft-darwin-x64';
           } else if (platform === 'linux') {
-            packageName = arch === 'arm64' ? 'gitforge-linux-arm64' : 'gitforge-linux-x64';
+            packageName = arch === 'arm64' ? 'gitcraft-linux-arm64' : 'gitcraft-linux-x64';
           } else {
             console.error(`Unsupported platform: ${platform}-${arch}`);
             process.exit(1);
@@ -301,20 +301,20 @@ jobs:
           
           try {
             const pkgPath = require.resolve(`${packageName}/package.json`);
-            const binPath = path.join(path.dirname(pkgPath), 'bin', platform === 'win32' ? 'gitforge.exe' : 'gitforge');
+            const binPath = path.join(path.dirname(pkgPath), 'bin', platform === 'win32' ? 'gitcraft.exe' : 'gitcraft');
             execFileSync(binPath, process.argv.slice(2), { stdio: 'inherit' });
           } catch (err) {
             console.error(`Platform-specific package not found: ${packageName}`);
             console.error(`Install it directly:`);
             console.error(`   npm install -g ${packageName}`);
             console.error(`   OR`);
-            console.error(`   npm install -g gitforge-${platform}-${arch}`);
+            console.error(`   npm install -g gitcraft-${platform}-${arch}`);
             process.exit(1);
           }
           EOF
           
-          chmod +x gitforge-unified/bin/gitforge
-          cd gitforge-unified
+          chmod +x gitcraft-unified/bin/gitcraft
+          cd gitcraft-unified
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -333,9 +333,9 @@ jobs:
           VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
 
           # Get release assets
-          LINUX_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitforge-linux-x64-glibc"
-          DARWIN_ARM_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitforge-darwin-arm64"
-          DARWIN_X64_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitforge-darwin-x64"
+          LINUX_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitcraft-linux-x64-glibc"
+          DARWIN_ARM_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitcraft-darwin-arm64"
+          DARWIN_X64_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/gitcraft-darwin-x64"
 
           # Calculate checksums
           wget -q $LINUX_URL -O linux-binary
@@ -350,7 +350,7 @@ jobs:
           cd homebrew-tap
 
           # Create/update formula
-          cat > Formula/gitforge.rb << EOF
+          cat > Formula/gitcraft.rb << EOF
           class GhTemplates < Formula
             desc "GitHub Templates CLI tool"
             homepage "https://github.com/${{ github.repository }}"
@@ -369,11 +369,11 @@ jobs:
               sha256 "$LINUX_SHA"
             end
             def install
-              bin.install "gitforge"
+              bin.install "gitcraft"
             end
 
             test do
-              system "#{bin}/gitforge", "--version"
+              system "#{bin}/gitcraft", "--version"
             end
           end
           EOF
@@ -381,6 +381,6 @@ jobs:
           # Commit and push
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/gitforge.rb
-          git commit -m "Update gitforge to $VERSION"
+          git add Formula/gitcraft.rb
+          git commit -m "Update gitcraft to $VERSION"
           git push https://x-access-token:${{ secrets.HOMEBREW_GITHUB_TOKEN }}@github.com/rafaeljohn9/homebrew-tap.git

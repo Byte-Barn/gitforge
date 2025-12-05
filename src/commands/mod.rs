@@ -13,15 +13,15 @@ pub mod preview;
 #[derive(Subcommand)]
 pub enum Command {
     #[command(subcommand)]
-    /// Add issue templates (e.g. `gitforge add issue-template`)
+    /// Add issue templates (e.g. `gitcraft add issue-template`)
     Add(add::Command),
 
     #[command(subcommand)]
-    /// List issue templates (e.g. `gitforge list issue-templates`)
+    /// List issue templates (e.g. `gitcraft list issue-templates`)
     List(list::Command),
 
     #[command(subcommand)]
-    /// Preview an issue template (e.g. `gitforge preview issue-template`)
+    /// Preview an issue template (e.g. `gitcraft preview issue-template`)
     Preview(preview::Command),
 }
 

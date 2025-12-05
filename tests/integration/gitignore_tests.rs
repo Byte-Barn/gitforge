@@ -8,7 +8,7 @@ use crate::common::test_utils::{
 };
 
 /**
- Integration tests for the `gitforge` gitignore subcommand.
+ Integration tests for the `gitcraft` gitignore subcommand.
 
  This test suite covers the following scenarios:
 
@@ -47,7 +47,7 @@ fn test_gitignore_add_rust() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "rust"])
         .assert()
@@ -67,7 +67,7 @@ fn test_gitignore_add_rust_gitignore() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "rust.gitignore"])
         .assert()
@@ -87,7 +87,7 @@ fn test_gitignore_add_multiple() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "rust", "python"])
         .assert()
@@ -108,7 +108,7 @@ fn test_gitignore_add_with_dir() {
     let target_dir = temp_path.join("custom_dir");
     fs::create_dir_all(&target_dir).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.args(&[
         "add",
         "gitignore",
@@ -134,7 +134,7 @@ fn test_gitignore_add_append() {
     create_git_repo(&temp_path);
 
     // First add Rust template
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
 cmd.args(&["add", "gitignore", "rust"])
         .assert()
@@ -147,7 +147,7 @@ cmd.args(&["add", "gitignore", "rust"])
     assert_file_contains(&temp_path.join(".gitignore"), "Rust");
 
     // Then append Python template
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "python", "--append"])
         .assert()
@@ -173,7 +173,7 @@ fn test_gitignore_add_force_overwrite() {
     fs::write(temp_path.join(".gitignore"), "existing content").unwrap();
 
     // Try to add without force (should fail)
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "rust"])
         .assert()
@@ -181,7 +181,7 @@ fn test_gitignore_add_force_overwrite() {
         .stderr(predicate::str::contains("already exists"));
 
     // Try with force flag (should succeed)
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "rust", "--force"])
         .assert()
@@ -200,7 +200,7 @@ fn test_gitignore_add_all() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "--all"])
         .assert()
@@ -222,7 +222,7 @@ fn test_gitignore_add_invalid_template() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "not-a-template"])
         .assert()
@@ -237,7 +237,7 @@ fn test_gitignore_add_no_template() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "not-a-template"])
         .assert()
@@ -252,7 +252,7 @@ fn test_gitignore_add_update_cache() {
 
     create_git_repo(&temp_path);
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "rust", "--update-cache"])
         .assert()
@@ -270,7 +270,7 @@ fn test_gitignore_add_valid_and_invalid_template() {
     create_git_repo(&temp_path);
 
     // Try to add one valid and one invalid template
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "rust", "not-a-template"])
         .assert()
@@ -295,7 +295,7 @@ fn test_gitignore_add_default_with_output() {
     create_git_repo(&temp_path);
 
     // Add rust template with output file .gitignore
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "rust", "-o", ".gitignore"])
         .assert()
@@ -316,7 +316,7 @@ fn test_gitignore_add_multiple_templates_uneven_output_files() {
     create_git_repo(&temp_path);
 
     // Pass 3 output files for 2 templates (should error)
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&[
         "add",
@@ -342,7 +342,7 @@ fn test_gitignore_list_default() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["list", "gitignores"])
         .assert()
@@ -358,7 +358,7 @@ fn test_gitignore_list_popular() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["list", "gitignores", "--popular"])
         .assert()
@@ -371,7 +371,7 @@ fn test_gitignore_list_global() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["list", "gitignores", "--global"])
         .assert()
@@ -384,7 +384,7 @@ fn test_gitignore_list_community() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["list", "gitignores", "--community"])
         .assert()
@@ -397,7 +397,7 @@ fn test_gitignore_list_update_cache() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["list", "gitignores", "--update-cache"])
         .assert()
@@ -412,7 +412,7 @@ fn test_gitignore_preview_single_template() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["preview", "gitignore", "rust"])
         .assert()
@@ -425,7 +425,7 @@ fn test_gitignore_preview_single_template_update_cache() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["preview", "gitignore", "rust", "--update-cache"])
         .assert()
@@ -438,7 +438,7 @@ fn test_gitignore_preview_multiple_templates() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["preview", "gitignore", "rust", "python"])
         .assert()
@@ -452,7 +452,7 @@ fn test_gitignore_preview_update_cache() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["preview", "gitignore", "rust", "--update-cache"])
         .assert()
@@ -465,7 +465,7 @@ fn test_gitignore_preview_invalid_template() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["preview", "gitignore", "not-a-template"])
         .assert()
@@ -478,7 +478,7 @@ fn test_gitignore_preview_no_template() {
     let temp_dir = setup_test_env();
     let temp_path = temp_dir.path().to_path_buf();
 
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["preview", "gitignore"])
         .assert()
@@ -493,36 +493,36 @@ fn test_gitignore_help_command() {
     let temp_path = temp_dir.path().to_path_buf();
 
     // add gitignore --help
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["add", "gitignore", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Add gitignore templates"))
-        .stdout(predicate::str::contains("Usage: gitforge add gitignore"))
+        .stdout(predicate::str::contains("Usage: gitcraft add gitignore"))
         .stdout(predicate::str::contains("--dir"))
         .stdout(predicate::str::contains("--force"))
         .stdout(predicate::str::contains("--update-cache"))
         .stdout(predicate::str::contains("--output").or(predicate::str::contains("-o")));
 
     // list gitignore --help
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["list", "gitignore", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("List available gitignore templates"))
-        .stdout(predicate::str::contains("Usage: gitforge list gitignore"))
+        .stdout(predicate::str::contains("Usage: gitcraft list gitignore"))
         .stdout(predicate::str::contains("-p").or(predicate::str::contains("--popular")))
         .stdout(predicate::str::contains("--update-cache"));
 
     // preview gitignore --help
-    let mut cmd = AssertCommand::cargo_bin("gitforge").unwrap();
+    let mut cmd = AssertCommand::cargo_bin("gitcraft").unwrap();
     cmd.current_dir(&temp_path);
     cmd.args(&["preview", "gitignore", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Preview a gitignore template"))
-        .stdout(predicate::str::contains("Usage: gitforge preview gitignore"))
+        .stdout(predicate::str::contains("Usage: gitcraft preview gitignore"))
         .stdout(predicate::str::contains("--update-cache"));
 }

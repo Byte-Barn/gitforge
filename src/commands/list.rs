@@ -6,7 +6,7 @@ use crate::commands::issue;
 use crate::commands::license;
 use crate::commands::pr;
 
-/// Subcommands for `gitforge list ...`
+/// Subcommands for `gitcraft list ...`
 #[derive(Subcommand)]
 pub enum Command {
     /// List available gitignore templates

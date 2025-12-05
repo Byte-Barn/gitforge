@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Subcommand;
 use crate::commands::{gitignore, issue, license, pr};
 
-/// Subcommands for `gitforge add ...`
+/// Subcommands for `gitcraft add ...`
 #[derive(Subcommand)]
 pub enum Command {
     /// Add gitignore templates

@@ -5,7 +5,7 @@ use crate::commands::issue;
 use crate::commands::license;
 use crate::commands::pr;
 
-/// Subcommands for `gitforge preview ...`
+/// Subcommands for `gitcraft preview ...`
 #[derive(Subcommand)]
 pub enum Command {
     /// Preview a gitignore template
