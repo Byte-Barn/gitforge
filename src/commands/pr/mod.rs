@@ -2,13 +2,13 @@ use clap::Subcommand;
 
 use crate::commands::base::Runnable;
 
-mod add;
-mod list;
-mod preview;
+pub mod add;
+pub mod list;
+pub mod preview;
 
 // Global constants - these can stay in the main module file
 const GITHUB_RAW_BASE: &str =
-    "https://raw.githubusercontent.com/rafaeljohn9/gh-templates/main/templates";
+    "https://raw.githubusercontent.com/rafaeljohn9/gitcraft/main/templates";
 
 #[derive(Subcommand)]
 pub enum Command {

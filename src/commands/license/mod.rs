@@ -5,9 +5,9 @@ use crate::utils::cache::{Cache, CacheManager};
 use crate::utils::progress;
 use crate::utils::remote::Fetcher;
 
-mod add;
-mod list;
-mod preview;
+pub mod add;
+pub mod list;
+pub mod preview;
 
 // Global constants - these can stay in the main module file
 const CACHE_MAX_AGE_SECONDS: u64 = 60 * 60 * 24 * 30; // 30 days
