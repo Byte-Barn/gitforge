@@ -1,6 +1,7 @@
 name: Publish Cargo
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 permissions:

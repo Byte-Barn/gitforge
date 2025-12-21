@@ -2,29 +2,16 @@ name: Release Orchestrator
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    tags: ["v*.*.*"]
   workflow_dispatch:
 
 jobs:
-  trigger-release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Builds
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: build-binaries.yml
-          token: ${{ secrets.WORKFLOW_PAT }}
+  build:
+    uses: ./.github/workflows/build-binaries.yml
 
-      - name: Trigger PyPI Publish
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: publish-pypi.yml
-          token: ${{ secrets.WORKFLOW_PAT }}
+  publish-cargo:
+    uses: ./.github/workflows/publish-cargo.yml
 
-      - name: Fire Cargo Publish
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: publish-cargo.yml
-          token: ${{ secrets.WORKFLOW_PAT }}
-
+  publish-pypi:
+    uses: ./.github/workflows/publish-pypi.yml
+    needs: build  # ← Can run after build, even in parallel with cargo
