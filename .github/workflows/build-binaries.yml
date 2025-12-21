@@ -1,9 +1,6 @@
-name: Build Binaries
+name: Build Binaries and Wheels
 
 on:
-  push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+
   workflow_dispatch:
 
 jobs:
@@ -15,23 +12,24 @@ jobs:
       matrix:
         build:
           # Linux glibc
-          - { NAME: linux-x64-glibc,    OS: ubuntu-22.04, TARGET: x86_64-unknown-linux-gnu }
-          - { NAME: linux-x86-glibc,    OS: ubuntu-22.04, TARGET: i686-unknown-linux-gnu }
-          - { NAME: linux-arm64-glibc,  OS: ubuntu-22.04, TARGET: aarch64-unknown-linux-gnu }
+          - { NAME: linux-x64-glibc,    OS: ubuntu-22.04, TARGET: x86_64-unknown-linux-gnu, BUILD_WHEEL: true }
+          - { NAME: linux-x86-glibc,    OS: ubuntu-22.04, TARGET: i686-unknown-linux-gnu,   BUILD_WHEEL: true }
+          - { NAME: linux-arm64-glibc,  OS: ubuntu-22.04, TARGET: aarch64-unknown-linux-gnu, BUILD_WHEEL: true }
 
-          # Linux musl (fully static)
-          - { NAME: linux-x64-musl,     OS: ubuntu-22.04, TARGET: x86_64-unknown-linux-musl }
-          - { NAME: linux-x86-musl,     OS: ubuntu-22.04, TARGET: i686-unknown-linux-musl }
-          - { NAME: linux-arm64-musl,   OS: ubuntu-22.04, TARGET: aarch64-unknown-linux-musl }
+          # Linux musl (static)
+          - { NAME: linux-x64-musl,     OS: ubuntu-22.04, TARGET: x86_64-unknown-linux-musl, BUILD_WHEEL: true }
+          - { NAME: linux-x86-musl,     OS: ubuntu-22.04, TARGET: i686-unknown-linux-musl,   BUILD_WHEEL: true }
+          - { NAME: linux-arm64-musl,   OS: ubuntu-22.04, TARGET: aarch64-unknown-linux-musl, BUILD_WHEEL: true }
 
-          # Windows
-          - { NAME: windows-x64-msvc,   OS: windows-latest, TARGET: x86_64-pc-windows-msvc }
-          - { NAME: windows-x86-msvc,   OS: windows-latest, TARGET: i686-pc-windows-msvc }
-          - { NAME: windows-arm64-msvc, OS: windows-latest, TARGET: aarch64-pc-windows-msvc }
+          # Windows (MSVC)
+          - { NAME: windows-x64-msvc,   OS: windows-latest, TARGET: x86_64-pc-windows-msvc,   BUILD_WHEEL: true }
+          - { NAME: windows-x86-msvc,   OS: windows-latest, TARGET: i686-pc-windows-msvc,     BUILD_WHEEL: true }
+          # ⚠️ Skip Windows ARM64 for wheels (maturin doesn't support it yet)
+          - { NAME: windows-arm64-msvc, OS: windows-latest, TARGET: aarch64-pc-windows-msvc, BUILD_WHEEL: false }
 
           # macOS
-          - { NAME: darwin-x64,         OS: macos-15, TARGET: x86_64-apple-darwin }
-          - { NAME: darwin-arm64,       OS: macos-15, TARGET: aarch64-apple-darwin }
+          - { NAME: darwin-x64,         OS: macos-15, TARGET: x86_64-apple-darwin,   BUILD_WHEEL: true }
+          - { NAME: darwin-arm64,       OS: macos-15, TARGET: aarch64-apple-darwin,  BUILD_WHEEL: true }
 
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +43,7 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo install cross --git https://github.com/cross-rs/cross
 
+      # === BUILD RUST BINARY ===
       - name: Build binary
         shell: bash
         run: |
@@ -54,23 +53,55 @@ jobs:
             cargo build --release --target ${{ matrix.build.TARGET }}
           fi
 
-      - name: Prepare artifact
+      # === PREPARE RAW BINARY ARTIFACT ===
+      - name: Prepare raw binary artifact
         shell: bash
         run: |
           BINARY_NAME="gitcraft"
           if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
             BINARY_NAME="${BINARY_NAME}.exe"
             cp "target/${{ matrix.build.TARGET }}/release/gitcraft.exe" "./gitcraft-${{ matrix.build.NAME }}.exe"
-            echo "ARTIFACT_FILE=gitcraft-${{ matrix.build.NAME }}.exe" >> $GITHUB_ENV
+            echo "BINARY_ARTIFACT=gitcraft-${{ matrix.build.NAME }}.exe" >> $GITHUB_ENV
           else
             cp "target/${{ matrix.build.TARGET }}/release/gitcraft" "./gitcraft-${{ matrix.build.NAME }}"
             chmod +x "./gitcraft-${{ matrix.build.NAME }}"
-            echo "ARTIFACT_FILE=gitcraft-${{ matrix.build.NAME }}" >> $GITHUB_ENV
+            echo "BINARY_ARTIFACT=gitcraft-${{ matrix.build.NAME }}" >> $GITHUB_ENV
           fi
 
-      - name: Upload binary as artifact
+      - name: Upload raw binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.build.NAME }}
-          path: ${{ env.ARTIFACT_FILE }}
+          path: ${{ env.BINARY_ARTIFACT }}
+          if-no-files-found: error
+
+      # === BUILD PYTHON WHEEL (if enabled) ===
+      - name: Setup Python for maturin
+        if: matrix.build.BUILD_WHEEL == true
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install maturin
+        if: matrix.build.BUILD_WHEEL == true
+        run: pip install maturin
+
+      - name: Build Python wheel with maturin
+        if: matrix.build.BUILD_WHEEL == true
+        shell: bash
+        run: |
+          # Ensure pyproject.toml exists and has bindings = "bin"
+          maturin build --release --target ${{ matrix.build.TARGET }}
+          # Verify wheel exists
+          if [ ! -d "target/wheels" ] || [ -z "$(ls target/wheels/*.whl 2>/dev/null)" ]; then
+            echo "❌ No wheel found after maturin build!"
+            exit 1
+          fi
+
+      - name: Upload Python wheel artifact
+        if: matrix.build.BUILD_WHEEL == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.build.NAME }}
+          path: target/wheels/*.whl
           if-no-files-found: error

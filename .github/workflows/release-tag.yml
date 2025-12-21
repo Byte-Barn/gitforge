@@ -10,27 +10,21 @@ jobs:
   trigger-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Fire sub-workflows
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: publish-cargo.yml
-
       - name: Trigger Builds
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: build-binaries.yml
+          token: ${{ secrets.WORKFLOW_PAT }}
 
-      - name: Trigger PyPI
+      - name: Trigger PyPI Publish
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: publish-pypi.yml
+          token: ${{ secrets.WORKFLOW_PAT }}
 
-      - name: Trigger NPM
+      - name: Fire Cargo Publish
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: publish-npm.yml
+          workflow: publish-cargo.yml
+          token: ${{ secrets.WORKFLOW_PAT }}
 
-      - name: Trigger Homebrew
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: publish-homebrew.yml

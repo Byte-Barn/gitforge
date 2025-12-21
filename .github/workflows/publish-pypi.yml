@@ -4,19 +4,27 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write
+  id-token: write  # for trusted publishing
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Download wheels
+      - name: Download all Python wheel artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist
 
-      - name: Publish
+      - name: Validate wheels exist
+        run: |
+          ls -la dist/
+          if [ -z "$(ls dist/*.whl 2>/dev/null)" ]; then
+            echo "ERROR: No .whl files found in dist/!"
+            exit 1
+          fi
+
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        # Uses trusted publishing via id-token — no API token needed
