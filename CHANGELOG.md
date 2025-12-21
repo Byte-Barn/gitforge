@@ -13,8 +13,10 @@ All notable changes to this project will be documented in this file.
 
 - bump Cargo toml version (3c9ec9c)
 
+- update CHANGELOG [skip ci] (c1dd6d8)
 
-## [Unreleased]
+
+## [v0.1.111]
 
 
 
@@ -51,26 +53,6 @@ All notable changes to this project will be documented in this file.
 - rename project from 'gitforge' to 'gitcraft' (001288e)
 
 - broke down build.yml to different yml files. (68c01c3)
-
-
-## [Unreleased]
-
-
-
-### Chore
-
-- update CHANGELOG [skip ci] (40fbae0)
-
-- update documentation for v0.1.43 [skip ci] (7b4063a)
-
-
-## [Unreleased]
-
-
-
-### Chore
-
-- update CHANGELOG [skip ci] (40fbae0)
 
 
 ## [v0.1.43]
