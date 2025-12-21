@@ -3,6 +3,9 @@ name: Publish Cargo
 
 on:
   workflow_call:
+    secrets:
+      CARGO_REGISTRY_TOKEN:
+        required: true
   workflow_dispatch:
 
 permissions:
