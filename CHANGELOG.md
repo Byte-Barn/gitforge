@@ -13,19 +13,12 @@ All notable changes to this project will be documented in this file.
 
 - update documentation for v0.0.132 [skip ci] (985083f)
 
+- update CHANGELOG [skip ci] (1ff4235)
+
 
 ### Fix
 
 - updated pyproject toml for dynamic versioning (125a5b6)
-
-
-## [Unreleased]
-
-
-
-### Chore
-
-- update CHANGELOG [skip ci] (84416d4)
 
 
 ## [v0.0.132]
