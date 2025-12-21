@@ -9,18 +9,18 @@ All notable changes to this project will be documented in this file.
 
 ### Chore
 
-- update CHANGELOG [skip ci] (3314021)
-
-- update documentation for v0.0.131 [skip ci] (9160bfa)
+- update CHANGELOG [skip ci] (84416d4)
 
 
-## [Unreleased]
+## [v0.0.132]
 
 
 
 ### Chore
 
 - update CHANGELOG [skip ci] (3314021)
+
+- update documentation for v0.0.131 [skip ci] (9160bfa)
 
 
 ## [v0.0.131]
