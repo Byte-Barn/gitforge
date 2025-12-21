@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 
 - update documentation for v0.0.125 [skip ci] (f61f8f6)
 
+- update documentation for v0.0.126 [skip ci] (48a9dde)
+
 
 ## [v0.0.125]
 
