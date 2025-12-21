@@ -1,55 +1,76 @@
 name: Build Binaries
 
 on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  build:
-    name: Build ${{ matrix.target.NAME }}
-    runs-on: ${{ matrix.target.OS }}
-
+  build-binaries:
+    name: Build ${{ matrix.build.NAME }}
+    runs-on: ${{ matrix.build.OS }}
     strategy:
       fail-fast: false
       matrix:
-        target:  # same matrix you already use
+        build:
+          # Linux glibc
+          - { NAME: linux-x64-glibc,    OS: ubuntu-22.04, TARGET: x86_64-unknown-linux-gnu }
+          - { NAME: linux-x86-glibc,    OS: ubuntu-22.04, TARGET: i686-unknown-linux-gnu }
+          - { NAME: linux-arm64-glibc,  OS: ubuntu-22.04, TARGET: aarch64-unknown-linux-gnu }
+
+          # Linux musl (fully static)
+          - { NAME: linux-x64-musl,     OS: ubuntu-22.04, TARGET: x86_64-unknown-linux-musl }
+          - { NAME: linux-x86-musl,     OS: ubuntu-22.04, TARGET: i686-unknown-linux-musl }
+          - { NAME: linux-arm64-musl,   OS: ubuntu-22.04, TARGET: aarch64-unknown-linux-musl }
+
+          # Windows
+          - { NAME: windows-x64-msvc,   OS: windows-latest, TARGET: x86_64-pc-windows-msvc }
+          - { NAME: windows-x86-msvc,   OS: windows-latest, TARGET: i686-pc-windows-msvc }
+          - { NAME: windows-arm64-msvc, OS: windows-latest, TARGET: aarch64-pc-windows-msvc }
+
+          # macOS
+          - { NAME: darwin-x64,         OS: macos-15, TARGET: x86_64-apple-darwin }
+          - { NAME: darwin-arm64,       OS: macos-15, TARGET: aarch64-apple-darwin }
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target.TARGET }}
+          targets: ${{ matrix.build.TARGET }}
 
-      - name: Install cross (linux)
+      - name: Install cross (Linux only)
         if: runner.os == 'Linux'
         run: cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Build binary
+        shell: bash
         run: |
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            cross build --release --target ${{ matrix.target.TARGET }}
+            cross build --release --target ${{ matrix.build.TARGET }}
           else
-            cargo build --release --target ${{ matrix.target.TARGET }}
+            cargo build --release --target ${{ matrix.build.TARGET }}
           fi
 
-      - name: Upload Binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: binary-${{ matrix.target.NAME }}
-          path: target/${{ matrix.target.TARGET }}/release/gitcraft*
-
-      - name: Build wheel (if enabled)
-        if: matrix.target.PYPI_PUBLISH == true
+      - name: Prepare artifact
+        shell: bash
         run: |
-          pip install maturin
-          maturin build --release --target ${{ matrix.target.TARGET }}
+          BINARY_NAME="gitcraft"
+          if [[ "${{ matrix.build.TARGET }}" == *"windows"* ]]; then
+            BINARY_NAME="${BINARY_NAME}.exe"
+            cp "target/${{ matrix.build.TARGET }}/release/gitcraft.exe" "./gitcraft-${{ matrix.build.NAME }}.exe"
+            echo "ARTIFACT_FILE=gitcraft-${{ matrix.build.NAME }}.exe" >> $GITHUB_ENV
+          else
+            cp "target/${{ matrix.build.TARGET }}/release/gitcraft" "./gitcraft-${{ matrix.build.NAME }}"
+            chmod +x "./gitcraft-${{ matrix.build.NAME }}"
+            echo "ARTIFACT_FILE=gitcraft-${{ matrix.build.NAME }}" >> $GITHUB_ENV
+          fi
 
-      - name: Upload Wheels
-        if: matrix.target.PYPI_PUBLISH == true
+      - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.target.NAME }}
-          path: target/wheels/*.whl
+          name: binary-${{ matrix.build.NAME }}
+          path: ${{ env.ARTIFACT_FILE }}
+          if-no-files-found: error

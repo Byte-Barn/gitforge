@@ -1,100 +1,25 @@
 [build-system]
-requires = ["maturin>=1.0,<2.0"]
+requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
 name = "gitcraft"
-version = "0.0.1" # This version should ideally match the Rust crate's version in Cargo.toml
-description = "Scaffold new repositories quickly using templates hosted on GitHub. A Rust-powered CLI."
-authors = [{ name = "ByteBarn", email = "john@kagunda.dev" }]
-requires-python = ">=3.8"
-keywords = [
-  "gitcraft", "scaffold", "template", "github", "repository", "cli", "developer", "productivity"
-]
-classifiers = [
-  "Development Status :: 5 - Production/Stable",
-  "Environment :: Console",
-  "Intended Audience :: Developers",
-  "Operating System :: OS Independent",
-  "License :: OSI Approved :: Apache Software License",
-  "Programming Language :: Rust",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: 3.11",
-  "Programming Language :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
-  "Programming Language :: Python :: 3 :: Only",
-  "Topic :: Software Development :: Build Tools",
-  "Topic :: Software Development :: Utilities",
-]
+version = "0.1.10"
+description = "A template project for GitHub-related utilities."
+authors = [{name = "John Kagunda", email = "john@kagunda.dev"}]
+license = {text = "Apache-2.0"}
 readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+]
+requires-python = ">=3.8"
+# No Python dependencies needed
+dependencies = []
 
-[project.urls]
-Repository = "https://github.com/Byte-Barn/gitcraft"
-Homepage = "https://gh-templates.dev/"
-Documentation = "https://gh-templates.dev/"
-Changelog = "https://github.com/Byte-Barn/gitcraft/blob/main/CHANGELOG.md"
-Releases = "https://github.com/Byte-Barn/gitcraft/releases"
-
-
-# --- Maturin Configuration ---
-# This section tells Maturin how to build the Rust project and package it.
 [tool.maturin]
-# 'bin' indicates that the Rust crate is a binary, not a library providing Python bindings.
+# Tell maturin: this is a binary (not a Python extension)
 bindings = "bin"
-# Path to the main Rust Cargo.toml file for the binary crate.
-# Adjust if your binary crate is located elsewhere.
-manifest-path = "Cargo.toml"
-# The name of the Rust binary target as defined in Cargo.toml's [[bin]] section.
-# This is usually the same as the crate name if not explicitly set differently.
-module-name = "gitcraft"
-# Set to true to strip debug symbols from the final binary, reducing size.
-strip = true
-
-# Include essential files in the source distribution (sdist)
-include = [
-    { path = "README.md", format = "sdist" },
-    { path = "LICENSE*", format = "sdist" }, # Include license files
-    # Add other relevant files like CHANGELOG.md, etc., if needed
-]
-
-# Optional: Exclude patterns for the wheel distribution (binaries)
-# exclude = []
-
-# --- Other Tool Configurations (Unchanged) ---
-[tool.rooster]
-changelog-contributors = false
-major-labels = []
-minor-labels = ["breaking"]
-ignore-labels = ["internal", "ci", "testing"]
-version_files = [
-  "README.md",
-  "pyproject.toml",
-  "Cargo.toml", # Adjust path if necessary
-  # Add other relevant Cargo.toml files if your workspace has multiple crates
-]
-
-[tool.rooster.section-labels]
-"Breaking changes" = ["breaking"]
-"Enhancements" = ["enhancement", "compatibility", "error messages"]
-"Preview features" = ["preview"]
-"Configuration" = ["configuration"]
-"Performance" = ["performance"]
-"Bug fixes" = ["bug"]
-"Rust API" = ["rustlib"]
-"Documentation" = ["documentation"]
-"Other changes" = ["__unknown__"]
-
-[tool.mypy]
-ignore_missing_imports = true
-files = [
-  # Adjust paths if your Python files are in a different location relative to pyproject.toml
-  # This section might be less relevant if there's minimal Python code.
-  # "python/gitcraft/*.py",
-]
-
-[tool.gitcraft]
-managed = false
