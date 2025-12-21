@@ -14,7 +14,7 @@ jobs:
         build:
           # Linux glibc (64-bit only)
           - { NAME: linux-x64-glibc,    OS: ubuntu-22.04, TARGET: x86_64-unknown-linux-gnu, BUILD_WHEEL: true }
-          - { NAME: linux-arm64-glibc,  OS: ubuntu-22.04, TARGET: aarch64-unknown-linux-gnu, BUILD_WHEEL: true }
+          - { NAME: linux-arm64-glibc,  OS: ubuntu-22.04, TARGET: aarch64-unknown-linux-gnu, BUILD_WHEEL: false }
 
           # Linux musl (64-bit only) → no wheels
           - { NAME: linux-x64-musl,     OS: ubuntu-22.04, TARGET: x86_64-unknown-linux-musl, BUILD_WHEEL: false }
@@ -36,11 +36,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.build.TARGET }}
-      
-      # HANDLE MISSING COMPILER FOR ARM64
-      - name: Install ARM64 cross-compiler (for aarch64 Linux)
-        if: runner.os == 'Linux' && contains(matrix.build.TARGET, 'aarch64-unknown-linux-gnu')
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
 
       # === HANDLE WHEEL TARGETS (maturin-controlled build) ===
       - name: Setup for maturin build (wheel targets)
