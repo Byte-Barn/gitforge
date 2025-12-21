@@ -82,20 +82,20 @@ jobs:
             fi
 
             # Write package.json
-            cat > "../npm-pkgs/$PKG_NAME/package.json" << EOF
-{
-  "name": "$PKG_NAME",
-  "version": "$VERSION",
-  "os": ["$OS"],
-  "cpu": ["$CPU"],
-  "bin": {
-    "gitcraft": "./bin/$BINARY"
-  },
-  "files": ["bin/"],
-  "license": "Apache-2.0",
-  "description": "Prebuilt gitcraft binary for $OS/$CPU"
-}
-EOF
+            cat > "../npm-pkgs/$PKG_NAME/package.json" << 'PKGJSON'
+          {
+            "name": "'"$PKG_NAME"'",
+            "version": "'"$VERSION"'",
+            "os": ["'"$OS"'"],
+            "cpu": ["'"$CPU"'"],
+            "bin": {
+              "gitcraft": "./bin/'"$BINARY"'"
+            },
+            "files": ["bin/"],
+            "license": "Apache-2.0",
+            "description": "Prebuilt gitcraft binary for '"$OS"'/'"$CPU"'"
+          }
+          PKGJSON
 
             # Publish package
             cd "../npm-pkgs/$PKG_NAME"
@@ -111,70 +111,70 @@ EOF
 
           # Create the smart JavaScript wrapper
           cat > gitcraft-unified/bin/gitcraft.js << 'EOF'
-#!/usr/bin/env node
-const os = require('os');
-const child_process = require('child_process');
-const path = require('path');
+          #!/usr/bin/env node
+          const os = require('os');
+          const child_process = require('child_process');
+          const path = require('path');
 
-const platform = os.platform();
-const arch = os.arch();
+          const platform = os.platform();
+          const arch = os.arch();
 
-let pkg;
-if (platform === 'linux' && arch === 'arm64') {
-  pkg = 'gitcraft-linux-arm64';
-} else if (platform === 'linux' && arch === 'x64') {
-  pkg = 'gitcraft-linux-x64';
-} else if (platform === 'darwin' && arch === 'arm64') {
-  pkg = 'gitcraft-darwin-arm64';
-} else if (platform === 'darwin' && arch === 'x64') {
-  pkg = 'gitcraft-darwin-x64';
-} else if (platform === 'win32' && arch === 'x64') {
-  pkg = 'gitcraft-windows-x64';
-} else {
-  console.error(`Unsupported platform: ${platform} ${arch}`);
-  process.exit(1);
-}
+          let pkg;
+          if (platform === 'linux' && arch === 'arm64') {
+            pkg = 'gitcraft-linux-arm64';
+          } else if (platform === 'linux' && arch === 'x64') {
+            pkg = 'gitcraft-linux-x64';
+          } else if (platform === 'darwin' && arch === 'arm64') {
+            pkg = 'gitcraft-darwin-arm64';
+          } else if (platform === 'darwin' && arch === 'x64') {
+            pkg = 'gitcraft-darwin-x64';
+          } else if (platform === 'win32' && arch === 'x64') {
+            pkg = 'gitcraft-windows-x64';
+          } else {
+            console.error(`Unsupported platform: ${platform} ${arch}`);
+            process.exit(1);
+          }
 
-try {
-  const pkgPath = require.resolve(`${pkg}/package.json`);
-  const binName = platform === 'win32' ? 'gitcraft.exe' : 'gitcraft';
-  const binPath = path.join(path.dirname(pkgPath), 'bin', binName);
-  child_process.execFileSync(binPath, process.argv.slice(2), { stdio: 'inherit' });
-} catch (e) {
-  console.error(`Platform-specific package not installed: ${pkg}`);
-  console.error(`Try: npm install -g ${pkg}`);
-  process.exit(1);
-}
-EOF
+          try {
+            const pkgPath = require.resolve(`${pkg}/package.json`);
+            const binName = platform === 'win32' ? 'gitcraft.exe' : 'gitcraft';
+            const binPath = path.join(path.dirname(pkgPath), 'bin', binName);
+            child_process.execFileSync(binPath, process.argv.slice(2), { stdio: 'inherit' });
+          } catch (e) {
+            console.error(`Platform-specific package not installed: ${pkg}`);
+            console.error(`Try: npm install -g ${pkg}`);
+            process.exit(1);
+          }
+          EOF
 
-          chmod +x gitcraft-unified/bin/gitcraft.js
+                    chmod +x gitcraft-unified/bin/gitcraft.js
 
-          # Create package.json for unified package
-          cat > gitcraft-unified/package.json << EOF
-{
-  "name": "gitcraft",
-  "version": "$VERSION",
-  "description": "A CLI tool for GitHub-related utilities",
-  "bin": {
-    "gitcraft": "./bin/gitcraft.js"
-  },
-  "files": ["bin/"],
-  "license": "Apache-2.0",
-  "optionalDependencies": {
-    "gitcraft-linux-x64": "$VERSION",
-    "gitcraft-linux-arm64": "$VERSION",
-    "gitcraft-darwin-x64": "$VERSION",
-    "gitcraft-darwin-arm64": "$VERSION",
-    "gitcraft-windows-x64": "$VERSION"
-  },
-  "engines": {
-    "node": ">=14"
-  }
-}
-EOF
+                    # Create package.json for unified package
+                    cat > gitcraft-unified/package.json << 'UNIFIEDJSON'
+                    {
+                      "name": "gitcraft",
+                      "version": "'"$VERSION"'",
+                      "description": "A CLI tool for GitHub-related utilities",
+                      "bin": {
+                        "gitcraft": "./bin/gitcraft.js"
+                      },
+                      "files": ["bin/"],
+                      "license": "Apache-2.0",
+                      "optionalDependencies": {
+                        "gitcraft-linux-x64": "'"$VERSION"'",
+                        "gitcraft-linux-arm64": "'"$VERSION"'",
+                        "gitcraft-darwin-x64": "'"$VERSION"'",
+                        "gitcraft-darwin-arm64": "'"$VERSION"'",
+                        "gitcraft-windows-x64": "'"$VERSION"'"
+                      },
+                      "engines": {
+                        "node": ">=14"
+                      }
+                    }
+          UNIFIEDJSON
 
-          # Publish unified package
-          cd gitcraft-unified
-          npm publish --access public
+                    # Publish unified package
+                    cd gitcraft-unified
+                    npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
