@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 
 - update CHANGELOG [skip ci] (d6088c3)
 
+- update documentation for v0.0.119 [skip ci] (dbf9f96)
+
 
 ## [v0.0.119]
 
