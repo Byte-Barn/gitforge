@@ -2,28 +2,179 @@ name: Publish NPM packages
 
 on:
   workflow_call:
+    secrets:
+      NPM_TOKEN:
+        required: true
   workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download binaries
+      - name: Set version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          if [[ "$VERSION" == "$GITHUB_REF" ]]; then
+            VERSION="0.0.0-dev"  # for non-tag runs
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Download all binary artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: binary-*
-          merge-multiple: false
+          path: binaries
 
-      - name: Build platform packages
-        run: ./scripts/build-platform-npm.sh
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: Build unified package
-        run: ./scripts/build-unified-npm.sh
+      - name: Publish platform-specific packages
+        run: |
+          cd binaries
+          for artifact in binary-*; do
+            if [ ! -d "$artifact" ]; then continue; fi
 
-      - name: Publish
-        run: ./scripts/publish-npm.sh
+            # Map artifact name to npm pkg name & metadata
+            case "$artifact" in
+              binary-linux-x64-glibc)
+                PKG_NAME="gitcraft-linux-x64"
+                OS="linux"; CPU="x64"
+                BINARY="gitcraft"
+                ;;
+              binary-linux-arm64-glibc)
+                PKG_NAME="gitcraft-linux-arm64"
+                OS="linux"; CPU="arm64"
+                BINARY="gitcraft"
+                ;;
+              binary-darwin-x64)
+                PKG_NAME="gitcraft-darwin-x64"
+                OS="darwin"; CPU="x64"
+                BINARY="gitcraft"
+                ;;
+              binary-darwin-arm64)
+                PKG_NAME="gitcraft-darwin-arm64"
+                OS="darwin"; CPU="arm64"
+                BINARY="gitcraft"
+                ;;
+              binary-windows-x64-msvc)
+                PKG_NAME="gitcraft-windows-x64"
+                OS="win32"; CPU="x64"
+                BINARY="gitcraft.exe"
+                ;;
+              *)
+                echo "Skipping unsupported artifact: $artifact"
+                continue
+                ;;
+            esac
+
+            # Create npm package dir
+            mkdir -p "../npm-pkgs/$PKG_NAME/bin"
+            cp "$artifact/$BINARY" "../npm-pkgs/$PKG_NAME/bin/"
+
+            # Make binary executable (non-Windows)
+            if [[ "$OS" != "win32" ]]; then
+              chmod +x "../npm-pkgs/$PKG_NAME/bin/$BINARY"
+            fi
+
+            # Write package.json
+            cat > "../npm-pkgs/$PKG_NAME/package.json" << EOF
+{
+  "name": "$PKG_NAME",
+  "version": "${{ env.VERSION }}",
+  "os": ["$OS"],
+  "cpu": ["$CPU"],
+  "bin": {
+    "gitcraft": "./bin/$BINARY"
+  },
+  "files": ["bin/"],
+  "license": "Apache-2.0",
+  "description": "Prebuilt gitcraft binary for $OS/$CPU"
+}
+EOF
+
+            # Publish package
+            cd "../npm-pkgs/$PKG_NAME"
+            npm publish --access public
+            cd ../../..
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create and publish unified package
+        run: |
+          mkdir -p gitcraft-unified/bin
+
+          # Create the smart JavaScript wrapper
+          cat > gitcraft-unified/bin/gitcraft.js << 'EOF'
+#!/usr/bin/env node
+const os = require('os');
+const child_process = require('child_process');
+const path = require('path');
+
+const platform = os.platform();
+const arch = os.arch();
+
+let pkg;
+if (platform === 'linux' && arch === 'arm64') {
+  pkg = 'gitcraft-linux-arm64';
+} else if (platform === 'linux' && arch === 'x64') {
+  pkg = 'gitcraft-linux-x64';
+} else if (platform === 'darwin' && arch === 'arm64') {
+  pkg = 'gitcraft-darwin-arm64';
+} else if (platform === 'darwin' && arch === 'x64') {
+  pkg = 'gitcraft-darwin-x64';
+} else if (platform === 'win32' && arch === 'x64') {
+  pkg = 'gitcraft-windows-x64';
+} else {
+  console.error(`Unsupported platform: ${platform} ${arch}`);
+  process.exit(1);
+}
+
+try {
+  const pkgPath = require.resolve(`${pkg}/package.json`);
+  const binName = platform === 'win32' ? 'gitcraft.exe' : 'gitcraft';
+  const binPath = path.join(path.dirname(pkgPath), 'bin', binName);
+  child_process.execFileSync(binPath, process.argv.slice(2), { stdio: 'inherit' });
+} catch (e) {
+  console.error(`Platform-specific package not installed: ${pkg}`);
+  console.error(`Try: npm install -g ${pkg}`);
+  process.exit(1);
+}
+EOF
+
+          chmod +x gitcraft-unified/bin/gitcraft.js
+
+          # Create package.json for unified package
+          cat > gitcraft-unified/package.json << EOF
+{
+  "name": "gitcraft",
+  "version": "${{ env.VERSION }}",
+  "description": "A CLI tool for GitHub-related utilities",
+  "bin": {
+    "gitcraft": "./bin/gitcraft.js"
+  },
+  "files": ["bin/"],
+  "license": "Apache-2.0",
+  "optionalDependencies": {
+    "gitcraft-linux-x64": "${{ env.VERSION }}",
+    "gitcraft-linux-arm64": "${{ env.VERSION }}",
+    "gitcraft-darwin-x64": "${{ env.VERSION }}",
+    "gitcraft-darwin-arm64": "${{ env.VERSION }}",
+    "gitcraft-windows-x64": "${{ env.VERSION }}"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
+EOF
+
+          # Publish unified package
+          cd gitcraft-unified
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

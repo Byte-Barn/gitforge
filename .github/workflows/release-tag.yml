@@ -19,3 +19,9 @@ jobs:
     uses: ./.github/workflows/publish-cargo.yml
     secrets:
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  
+  publish-npm:
+  uses: ./.github/workflows/publish-npm.yml
+  needs: build
+  secrets:
+    NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
