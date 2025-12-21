@@ -69,20 +69,20 @@ You can help by:
 
 #### Using npm:
 ```bash
-npm install -g gitforge
+npm install -g gitcraft
 ```
 
 #### Using pip:
 
 ```
-pip install gitforge
+pip install gitcraft
 ```
 
 
 #### Using Cargo:
 
 ```
-cargo install gitforge
+cargo install gitcraft
 ```
 
 
@@ -98,19 +98,19 @@ cargo install gitforge
 
 ```sh
 # Add a Python .gitignore
-gitforge add gitignore python
+gitcraft add gitignore python
 
 # List available gitignore templates
-gitforge list gitignores
+gitcraft list gitignores
 
 # Add a bug report issue template
-gitforge add issue-template bug
+gitcraft add issue-template bug
 
 # Preview a pull request template
-gitforge preview pr-template
+gitcraft preview pr-template
 
 # List available licenses
-gitforge list licenses
+gitcraft list licenses
 ```
 
 #### Old Syntax (Still Supported Temporarily)
@@ -145,7 +145,7 @@ These will be updated as the migration completes.
 ### Key Highlights:
 - Renamed to **GitForge**, with a clear **transition notice**.
 - Updated **badges, usage examples**, and **command syntax**.
-- Introduced new **natural language CLI syntax** (`gitforge add gitignore python`).
+- Introduced new **natural language CLI syntax** (`gitcraft add gitignore python`).
 - Kept **backward compatibility** note for developers still using `gh-templates`.
 
 ---

@@ -1,9 +1,9 @@
 [package]
 
-name = "gh-templates"
-version = "0.1.42"
+name = "gitcraft"
+version = "0.1.11"
 edition = "2021"
-authors = ["John Kagunda rafaeljohb@gmail.com"]
+authors = ["John Kagunda john@kagunda.dev"]
 description = "A template project for GitHub-related utilities."
 license = "Apache-2.0"
 

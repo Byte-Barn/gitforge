@@ -1,0 +1,25 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "gitcraft"
+version = "0.1.10"
+description = "A template project for GitHub-related utilities."
+authors = [{name = "John Kagunda", email = "john@kagunda.dev"}]
+license = {text = "Apache-2.0"}
+readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+]
+requires-python = ">=3.8"
+# No Python dependencies needed
+dependencies = []
+
+[tool.maturin]
+# Tell maturin: this is a binary (not a Python extension)
+bindings = "bin"
