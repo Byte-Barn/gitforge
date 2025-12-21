@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Updated README. Updated stale links and refactored `Gitforge` to `Gitcraft` by @RafaelJohn9
+- Update CHANGELOG [skip ci] by @github-actions[bot]
+- Refactor CI workflows and enhance changelog generation by @RafaelJohn9
+- Chore (cd): bumped project version in cargo toml by @RafaelJohn9
+- Update documentation for v0.0.133 [skip ci] by @github-actions[bot]
+
+## [Unreleased]
+
+### Changed
 - Refactor CI workflows and enhance changelog generation by @RafaelJohn9
 - Chore (cd): bumped project version in cargo toml by @RafaelJohn9
 - Update documentation for v0.0.133 [skip ci] by @github-actions[bot]
