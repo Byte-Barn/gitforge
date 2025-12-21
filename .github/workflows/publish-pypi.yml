@@ -2,10 +2,6 @@ name: Publish PyPI
 
 on:
   workflow_call:
-    inputs:
-      pypi_token:
-        required: true
-        type: string
   workflow_dispatch:
 
 jobs:
@@ -30,4 +26,4 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ inputs.pypi_token }}
+          password: ${{ secrets.PYPI_API_TOKEN }}

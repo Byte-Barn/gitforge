@@ -3,10 +3,6 @@ name: Publish Cargo
 
 on:
   workflow_call:
-    inputs:
-      cargo_token:
-        required: true
-        type: string
   workflow_dispatch:
 
 permissions:
@@ -22,4 +18,4 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Publish to crates.io
-        run: cargo publish --token "${{ inputs.cargo_token }}"
+        run: cargo publish --token "${{ secrets.CARGO_REGISTRY_TOKEN }}"
