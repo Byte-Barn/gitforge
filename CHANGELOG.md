@@ -9,16 +9,27 @@ All notable changes to this project will be documented in this file.
 
 ### Chore
 
+- update CHANGELOG [skip ci] (c88b933)
+
+
+## [v0.0.123]
+
+
+
+### Chore
+
 - bumped Cargo toml version (7e1d157)
 
 
-## [Unreleased]
+## [v0.0.122]
 
 
 
 ### Chore
 
 - update CHANGELOG [skip ci] (f1df68c)
+
+- update documentation for v0.0.121 [skip ci] (2a233e3)
 
 
 ## [v0.0.121]
