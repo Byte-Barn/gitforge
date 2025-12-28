@@ -8,13 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Bumped to 0.1.3 to allow cargo publish by @RafaelJohn9
-- Update documentation for v0.1.2 [skip ci] by @github-actions[bot]
 - Update CHANGELOG [skip ci] by @github-actions[bot]
 
-## [Unreleased]
+## [0.1.3] - 2025-12-28
 
 ### Changed
+- Bumped to 0.1.3 to allow cargo publish by @RafaelJohn9
+- Update documentation for v0.1.2 [skip ci] by @github-actions[bot]
 - Update CHANGELOG [skip ci] by @github-actions[bot]
 
 ## [0.1.2] - 2025-12-28
@@ -651,7 +651,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @actions-user made their first contribution
 * @dcccalvin made their first contribution
 * @Copilot made their first contribution
-[unreleased]: https://github.com/Byte-Barn/gitcraft/compare/v0.1.2..HEAD
+[unreleased]: https://github.com/Byte-Barn/gitcraft/compare/v0.1.3..HEAD
+[0.1.3]: https://github.com/Byte-Barn/gitcraft/compare/v0.1.2..v0.1.3
 [0.1.2]: https://github.com/Byte-Barn/gitcraft/compare/v0.1.1..v0.1.2
 [0.1.1]: https://github.com/Byte-Barn/gitcraft/compare/v0.1.0..v0.1.1
 [0.1.0]: https://github.com/Byte-Barn/gitcraft/compare/v0.0.1..v0.1.0
